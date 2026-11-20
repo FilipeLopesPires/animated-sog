@@ -22,6 +22,7 @@ from .motion import bezier2
 log = logging.getLogger(__name__)
 
 SM = 2.45                  # visible life: +-SM sigma (where the temporal weight drops below 0.05)
+SOURCE_TRANSFORMS = ("none", "z180")   # z180: the source is y up (Open4DGS trainer frame), rotate it to y down
 MID_O, MID_G = 3.0, 2.0    # coarser steps for the middle control points (measured: free in error)
 MREF_SAMPLES = 9
 R_MIN = 0.02               # file units: floor of the lever arm that turns an Omega step into a displacement
@@ -68,7 +69,7 @@ def splat_order(src: trigs.TrigsRuntime, count: int) -> np.ndarray:
 
 def encode(src: str | Path, dst: str | Path, *, qp: float = 2.0, qa: float = 8.0, prune: float = 0.3,
            mbits: int = 14, tbits: int = 11, lsbits: int = 8, shk: int = 65536, level: int = 9,
-           audio: str | Path | None = None, quat_order: str | None = None,
+           audio: str | Path | None = None, quat_order: str | None = None, transform: str = "none",
            palette_device: str | None = None) -> EncodeStats:
     """Encode the `.trigsbin` file `src` to the `.asog` file `dst`.
 
@@ -82,10 +83,16 @@ def encode(src: str | Path, dst: str | Path, *, qp: float = 2.0, qa: float = 8.0
     level:  zlib level
     audio:  sound file to embed (mp3, ogg, ...), looped with the clip by players
     quat_order: "wxyz" / "xyzw" overrides the source's quaternion order label (trigs.read)
+    transform:  "z180" rotates a y-up source (Open4DGS trainer frame) 180 degrees about z to the y-down
+                orientation of `.asog` (trigs.rotate_z180); "none" keeps it
     palette_device: "cuda" / "cpu" for the SH palette k-means (default: CUDA when available)
     """
     t0 = time.time()
+    if transform not in SOURCE_TRANSFORMS:
+        raise ValueError(f"transform {transform!r}, expected one of {SOURCE_TRANSFORMS}")
     source = trigs.read(src, quat_order)
+    if transform == "z180":
+        source = trigs.rotate_z180(source)
     n_dyn = int((~source.static).sum())
     count = source.count - int(round(prune * n_dyn))
     s = source.take(splat_order(source, count))
@@ -176,6 +183,8 @@ def encode(src: str | Path, dst: str | Path, *, qp: float = 2.0, qa: float = 8.0
     source_info = dict(format=man["format"], version=man["version"])
     if quat_order:   # how the source was read, so that `asog check` reads it the same way
         source_info["quaternionOrder"] = quat_order
+    if transform != "none":
+        source_info["transform"] = transform
     manifest = dict(format="asog", version=1, count=n, timeline=man["timeline"],
                     clips=[{k: v for k, v in c.items() if k not in SOURCE_GROUP_KEYS} for c in man["clips"]],
                     source=source_info, **meta)

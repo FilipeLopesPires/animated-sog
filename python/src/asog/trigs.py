@@ -127,3 +127,24 @@ def read(path: str | Path, quat_order: str | None = None) -> TrigsRuntime:
     quats /= np.maximum(np.linalg.norm(quats, axis=1, keepdims=True), 1e-12)
     return TrigsRuntime(man, means, log_scales, quats, opacity, sh0, shN, times, log_durations, anchors,
                         omega, nu, static, clip_index)
+
+
+SH_ABS_ORDER = [1, 0, 1, 2, 1, 0, 1, 2, 3, 2, 1, 0, 1, 2, 3]   # |m| of the degree 1..3 coefficients
+
+
+def rotate_z180(src: TrigsRuntime) -> TrigsRuntime:
+    """`src` rotated 180 degrees about z: from a y-up trainer frame (e.g. Open4DGS runs, floor at y = 0) to
+    the y-down TRiGS / COLMAP orientation that `.asog` files have and players turn back up.
+
+    Positions, anchors and the twist control points rotate as vectors, quaternions are pre-multiplied by
+    the z rotation and a real SH coefficient of order m picks up the factor (-1)^|m| (as `flipbook.flip`).
+    """
+    flip = np.array([-1.0, -1.0, 1.0])
+    w, x, y, z = src.quats.T
+    shN = src.shN
+    if shN is not None:
+        m = np.array(SH_ABS_ORDER[: shN.shape[1]])
+        shN = (shN * np.where(m % 2 == 1, -1.0, 1.0)[None, :, None]).astype(shN.dtype)
+    return TrigsRuntime(src.manifest, src.means * flip, src.log_scales, np.stack([-z, -y, x, w], 1), src.opacity,
+                        src.sh0, shN, src.times, src.log_durations, src.anchors * flip, src.omega * flip,
+                        src.nu * flip, src.static, src.clip)

@@ -57,6 +57,8 @@ def report(source: str | Path, asog: str | Path) -> dict[str, float]:
     a = decode.read(asog)
     how = a.manifest.get("source", {})   # the encoder's quaternion order and orientation fix of the source
     src = trigs.read(source, how.get("quaternionOrder"))
+    if how.get("transform") == "z180":
+        src = trigs.rotate_z180(src)
     src = src.take(splat_order(src, a.count))
     pc = lambda x, p: float(np.percentile(x, p))
     r: dict[str, float] = {

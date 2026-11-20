@@ -37,6 +37,7 @@ asog flipbook stage|train|flip|export|encode|evaluate|run ...
 | `--level` | 9 | zlib level |
 | `--audio` | | sound file embedded after the streams; players loop it with the clip |
 | `--quat-order` | from the file | `wxyz` / `xyzw`: overrides the source's label (Open4DGS exports of trainer checkpoints store wxyz but say xyzw) |
+| `--transform` | `none` | `z180`: the source is y up (the Open4DGS trainer frame); rotate it 180° about z to the `.asog` y down |
 | `--palette-device` | CUDA if available | `cpu` runs the SH palette with PyTorch on the CPU (minutes for 1M splats; leaves a busy GPU alone) |
 
 Measured on Charlie (900k splats): 28.9 MB from 319 MB, 45.3 dB mean over 6 views against the original
