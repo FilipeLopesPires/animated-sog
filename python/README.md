@@ -40,6 +40,10 @@ asog flipbook stage|train|flip|export|encode|evaluate|run ...
 | `--transform` | `none` | `z180`: the source is y up (the Open4DGS trainer frame); rotate it 180° about z to the `.asog` y down |
 | `--palette-device` | CUDA if available | `cpu` runs the SH palette with PyTorch on the CPU (minutes for 1M splats; leaves a busy GPU alone) |
 
+The temporal opacity threshold is read from the source (`semantics.temporalCullThreshold` with
+`temporalOpacityMode: smooth_cull_renormalized`, e.g. 0.01 for Open4DGS runs) and written as `motion.threshold`;
+the decoders and players use it (0.05 when absent).
+
 Measured on Charlie (900k splats): 28.9 MB from 319 MB, 45.3 dB mean over 6 views against the original
 with SH; `--qp 0.5 --prune 0`: 47.8 MB, 46.6 dB. Pruning beyond 40% loses visible detail.
 

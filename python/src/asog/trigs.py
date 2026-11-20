@@ -148,3 +148,12 @@ def rotate_z180(src: TrigsRuntime) -> TrigsRuntime:
     return TrigsRuntime(src.manifest, src.means * flip, src.log_scales, np.stack([-z, -y, x, w], 1), src.opacity,
                         src.sh0, shN, src.times, src.log_durations, src.anchors * flip, src.omega * flip,
                         src.nu * flip, src.static, src.clip)
+
+
+def temporal_threshold(man: dict) -> float | None:
+    """The temporal opacity threshold the source was trained and exported with, when its temporal weight is
+    the renormalised `max((gamma - th) / (1 - th), 0)` (`temporalOpacityMode: smooth_cull_renormalized`)."""
+    sem = man.get("semantics", {})
+    if sem.get("temporalOpacityMode") == "smooth_cull_renormalized" and "temporalCullThreshold" in sem:
+        return float(sem["temporalCullThreshold"])
+    return None
