@@ -1,0 +1,38 @@
+[build-system]
+requires = ["hatchling>=1.21"]
+build-backend = "hatchling.build"
+
+[project]
+name = "animated-sog"
+version = "0.1.0"
+description = "Animated SOG (.asog): compressed 4D Gaussian splat clips - encoder, reference decoder and flip-book pipeline"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+dependencies = ["numpy>=1.24"]
+keywords = ["gaussian splatting", "4dgs", "volumetric video", "sog", "trigs"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Topic :: Multimedia :: Graphics :: 3D Rendering",
+]
+
+[project.optional-dependencies]
+# SH palette k-means on a CUDA GPU; install torch from the PyTorch index that matches your CUDA
+palette = ["torch>=2.1"]
+# flip-book pipeline: checkpoint flip (torch) and held-out evaluation (gsplat renders; gsplat's
+# backend imports torch.utils.cpp_extension, which needs setuptools)
+flipbook = ["torch>=2.1", "gsplat>=1.5", "setuptools", "imageio>=2.30"]
+test = ["pytest>=8"]
+
+[project.scripts]
+asog = "asog.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/asog"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "gpu: needs CUDA PyTorch",
+    "data: needs the Rubloff test files outside the repo",
+]
