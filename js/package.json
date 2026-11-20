@@ -3,6 +3,8 @@
   "version": "0.1.0",
   "description": "Decoder and PlayCanvas / three.js players for Animated SOG (.asog) 4D Gaussian splat clips",
   "license": "MIT",
+  "repository": { "type": "git", "url": "git+https://github.com/arrival-space/animated-sog.git", "directory": "js" },
+  "homepage": "https://github.com/arrival-space/animated-sog",
   "type": "module",
   "main": "./src/index.js",
   "exports": {

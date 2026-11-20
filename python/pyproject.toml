@@ -36,3 +36,7 @@ markers = [
     "gpu: needs CUDA PyTorch",
     "data: needs the Rubloff test files outside the repo",
 ]
+
+[project.urls]
+Homepage = "https://github.com/arrival-space/animated-sog"
+Specification = "https://github.com/arrival-space/animated-sog/blob/main/docs/format.md"

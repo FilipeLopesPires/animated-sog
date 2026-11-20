@@ -84,6 +84,20 @@ evaluate`):
 | **frames rotated by `asog flipbook stage` (current pipeline)** | **41.0 dB** (worst frame 38.5) | **0.42×** | 33 frames |
 | trainer's own `--transform.rotation` (rotates SH bands 2–3 wrongly) | 39.4 dB (worst frame 37.3) | 0.42× | 33 frames |
 
+Encoder settings on the same trained clip (stage-rotated run):
+
+| encoding | size | PSNR vs flip book |
+|---|---|---|
+| default (prune 30 %) | 8.6 MB | 41.0 dB |
+| prune 15 % | 10.2 MB | 42.1 dB |
+| no pruning | 11.7 MB | 43.0 dB |
+| no pruning, qp 1 / qa 4 | 12.4 MB | 43.3 dB |
+| near-lossless (no pruning, qp 0.25, qa 0.5, 16-bit positions, finer times) | 14.8 MB | 43.4 dB |
+
+Flip books are built from many small translucent splats, so pruning costs more here than on the TRiGS
+clips; for them `--prune 0 --qp 1 --qa 4` is the better default. Beyond ~43.4 dB the limit is the trained
+model, not the encoding.
+
 Jitter is the second temporal difference on the subject's pixels, |x(t) − (x(t−1) + x(t+1)) / 2|: smooth
 motion scores near zero, the flip book's frame-to-frame re-tiling scores high. The distilled clip keeps the
 motion and loses 58 % of the jitter.
