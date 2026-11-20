@@ -174,7 +174,9 @@ From ² to ³, quantisation and pruning 30% of the splats cost about 2.6 dB. `as
 `docker/trainer/Dockerfile` builds an image with the Open4DGS trainer and exporter (cloned at fixed
 commits, built for compute capability 8.0–12.0) and this package in one environment, with
 `ASOG_TRIGS_PYTHON` and `ASOG_OPEN4DGS_CORE` already set. GitHub Actions publishes it as
-`ghcr.io/arrival-space/animated-sog-trainer:latest`. On a pod (e.g. RunPod, with TCP port 22 exposed and
+`ghcr.io/arrival-space/animated-sog-trainer:latest`. The install is `docker/trainer/setup.sh`, which also
+sets up a stock CUDA 12.8 machine without the image (`TORCH_CUDA_ARCH_LIST=9.0 bash setup.sh` on an H100,
+about 10 minutes, mostly compiling gsplat and pytorch3d). On a pod (e.g. RunPod, with TCP port 22 exposed and
 your public key in `PUBLIC_KEY`):
 
 ```
