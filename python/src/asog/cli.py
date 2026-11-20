@@ -14,7 +14,7 @@ from pathlib import Path
 
 ENCODE_OPTIONS = ("qp", "qa", "prune", "mbits", "tbits", "lsbits", "shk", "level")
 STAGE_OPTIONS = ("start", "count", "stride", "rotation")
-TRAIN_OPTIONS = ("fps", "keyframe_stride", "target_count", "steps", "latitude_steps")
+TRAIN_OPTIONS = ("fps", "keyframe_stride", "target_count", "steps", "latitude_steps", "image_size")
 
 
 def _encode_args(p: argparse.ArgumentParser) -> None:
@@ -35,6 +35,7 @@ def _train_args(p: argparse.ArgumentParser) -> None:
     p.add_argument("--target-count", type=int, default=400_000, help="splats")
     p.add_argument("--steps", type=int, default=60_000, help="training steps")
     p.add_argument("--latitude-steps", type=int, default=6, help="rows of the 12-column training orbit")
+    p.add_argument("--image-size", type=int, default=512, help="training image width and height (px)")
 
 
 def _tool_args(p: argparse.ArgumentParser, core: bool) -> None:

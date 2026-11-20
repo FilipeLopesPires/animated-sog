@@ -51,14 +51,14 @@ def _run(cmd: list[str]) -> None:
 
 def train(frames: str | Path, run_dir: str | Path, *, fps: float = 30,
           keyframe_stride: int = 9, target_count: int = 400_000, steps: int = 60_000, latitude_steps: int = 6,
-          trigs_python: str | Path | None = None) -> Path:
+          image_size: int = 512, trigs_python: str | Path | None = None) -> Path:
     """Train TRiGS on the PLY frames in `frames`; returns `<run_dir>/trigs_ckpt.pt` (y up).
 
     The trainer renders its training images from the PLYs on an orbit (12 longitudes x `latitude_steps`
-    rows, 512 px) around a y-up scene with its lowest point at y = 0, so the frames must already be there
+    rows, `image_size` px square) around a y-up scene with its lowest point at y = 0, so the frames must already be there
     (`stage --rotation`); the trainer's own `--transform.rotation` is left at its identity default because
     it rotates SH degrees 2 and 3 wrongly. Its ground-truth cache lives in RAM
-    (about frames x views x 512^2 x 4 bytes). `keyframe_stride` sets how many frames seed the 4D init; at 3
+    (about frames x views x image_size^2 x 4 bytes). `keyframe_stride` sets how many frames seed the 4D init; at 3
     with 400k splats the init's farthest-point sampling took over 14 minutes and filled the GPU, at 9 it
     starts in seconds. Debug renders and per-frame student PLYs are switched off.
     """
@@ -66,6 +66,7 @@ def train(frames: str | Path, run_dir: str | Path, *, fps: float = 30,
     _run([interpreter(trigs_python), "-m", "trigs.cli.train_from_plys_upstream",
           "--input-dir", str(frames), "--output-dir", str(run_dir),
           "--camera.latitude-steps", str(latitude_steps),
+          "--camera.width", str(image_size), "--camera.height", str(image_size),
           "--config.fps", str(fps), "--config.keyframe-stride", str(keyframe_stride),
           "--config.target-count", str(target_count), "--config.n-steps", str(steps),
           "--no-render-debug", "--no-save-plys"])
