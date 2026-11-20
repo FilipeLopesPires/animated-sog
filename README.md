@@ -82,7 +82,7 @@ a few engine internals (PlayCanvas 2.22); see the package READMEs for limits.
 - Open4DGS (ASU Narrative and Emerging Media Lab): the trainer and timeline exporter the flip-book
   pipeline runs as external tools (AGPL-3.0, not part of this repository).
 - SOG and the gsplat renderer of the PlayCanvas engine.
-- The Rubloff capture in `test-data/` and the movie above: [Infinite Realities](https://infinite-realities.net).
+- The Rubloff capture in `test-data/` and the movie above: [Infinite Realities](https://www.ir-ltd.net/).
 
 ## Licence
 
