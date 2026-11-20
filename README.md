@@ -4,6 +4,16 @@
 video that plays in the browser. One file holds a clip of moving Gaussians, with spherical harmonics, and
 optionally its soundtrack.
 
+<p align="center">
+  <a href="docs/media/rubloff-turntable.mp4"><img src="docs/media/rubloff-turntable.webp" width="480" alt="Rubloff, a 6-second flip book of per-frame splats distilled into one 12.4 MB .asog, playing while the camera circles it"></a><br>
+  <sub>Rubloff: 180 independently trained PLY frames (3.6 GB) as one 12.4 MB <code>.asog</code>, rendered from the file with
+  full SH while the camera circles it (<a href="docs/media/rubloff-turntable.mp4">MP4, 1080p</a>).</sub>
+</p>
+
+**Try it in the browser:** [PlayCanvas viewer](https://arrival-space.github.io/animated-sog/examples/playcanvas/) ·
+[three.js viewer](https://arrival-space.github.io/animated-sog/examples/three/) ·
+[seven clips in an arrival.space Space](https://arrival.space/42485456_6517)
+
 - About **11× smaller** than the TRiGS runtime files it is made from (Charlie: 319 MB → 28 MB at 45 dB), and
   a 6-second flip book of per-frame PLYs becomes **8.6 MB** instead of 202 MB of per-frame SOG.
 - Streams and decodes while it downloads; a 900 k-splat clip is ready in under a second on a desktop.
@@ -45,7 +55,7 @@ asog flipbook run frames/ work/ --rotation=-90,0,0
 ```
 
 View it: serve the repository root with any static server and open
-`examples/playcanvas/?src=../../test-data/rubloff-1s.asog` (or `examples/three/`).
+`examples/playcanvas/` (or `examples/three/`); `?src=<url>` opens another clip.
 
 Play it in your own PlayCanvas app:
 
