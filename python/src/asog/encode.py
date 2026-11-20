@@ -68,7 +68,7 @@ def splat_order(src: trigs.TrigsRuntime, count: int) -> np.ndarray:
 
 def encode(src: str | Path, dst: str | Path, *, qp: float = 2.0, qa: float = 8.0, prune: float = 0.3,
            mbits: int = 14, tbits: int = 11, lsbits: int = 8, shk: int = 65536, level: int = 9,
-           audio: str | Path | None = None,
+           audio: str | Path | None = None, quat_order: str | None = None,
            palette_device: str | None = None) -> EncodeStats:
     """Encode the `.trigsbin` file `src` to the `.asog` file `dst`.
 
@@ -81,10 +81,11 @@ def encode(src: str | Path, dst: str | Path, *, qp: float = 2.0, qa: float = 8.0
     shk:    largest SH palette (the palette has about one entry per 16 splats)
     level:  zlib level
     audio:  sound file to embed (mp3, ogg, ...), looped with the clip by players
+    quat_order: "wxyz" / "xyzw" overrides the source's quaternion order label (trigs.read)
     palette_device: "cuda" / "cpu" for the SH palette k-means (default: CUDA when available)
     """
     t0 = time.time()
-    source = trigs.read(src)
+    source = trigs.read(src, quat_order)
     n_dyn = int((~source.static).sum())
     count = source.count - int(round(prune * n_dyn))
     s = source.take(splat_order(source, count))
@@ -172,9 +173,12 @@ def encode(src: str | Path, dst: str | Path, *, qp: float = 2.0, qa: float = 8.0
     add("flags", s.static.astype(np.int64) | (s.clip << 1))
 
     man = source.manifest
+    source_info = dict(format=man["format"], version=man["version"])
+    if quat_order:   # how the source was read, so that `asog check` reads it the same way
+        source_info["quaternionOrder"] = quat_order
     manifest = dict(format="asog", version=1, count=n, timeline=man["timeline"],
                     clips=[{k: v for k, v in c.items() if k not in SOURCE_GROUP_KEYS} for c in man["clips"]],
-                    source=dict(format=man["format"], version=man["version"]), **meta)
+                    source=source_info, **meta)
     sound = None
     if audio is not None:
         ext = Path(audio).suffix.lstrip(".").lower()

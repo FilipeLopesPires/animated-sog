@@ -55,7 +55,8 @@ def motion_error(src: trigs.TrigsRuntime, a: decode.Asog, idx: np.ndarray) -> np
 def report(source: str | Path, asog: str | Path) -> dict[str, float]:
     """Errors of `asog` against `source`; position and motion errors in file units x 1e-3 (mm for metre files)."""
     a = decode.read(asog)
-    src = trigs.read(source)
+    how = a.manifest.get("source", {})   # the encoder's quaternion order and orientation fix of the source
+    src = trigs.read(source, how.get("quaternionOrder"))
     src = src.take(splat_order(src, a.count))
     pc = lambda x, p: float(np.percentile(x, p))
     r: dict[str, float] = {

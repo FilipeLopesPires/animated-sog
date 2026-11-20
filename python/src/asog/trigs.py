@@ -61,8 +61,12 @@ class TrigsRuntime:
         return TrigsRuntime(**out)
 
 
-def read(path: str | Path) -> TrigsRuntime:
+def read(path: str | Path, quat_order: str | None = None) -> TrigsRuntime:
     """Read a `.trigsbin` file.
+
+    `quat_order` ("wxyz" / "xyzw") overrides the manifest's `semantics.quaternionOrder`: Open4DGS's
+    `make-trigs-timeline.py` (2026-09-16.runtime-bin-v2) copies the trainer's wxyz quaternions verbatim
+    but labels them "xyzw", so a file exported from an unflipped trainer checkpoint needs "wxyz".
 
     Raises ValueError for a non-empty top-level static group (`--static-storage global`, the exporter's
     default): those splats belong to every clip, which `.asog` v1 cannot express (one clip per splat).
@@ -76,7 +80,9 @@ def read(path: str | Path) -> TrigsRuntime:
         if (man.get("static") or {}).get("count", 0) > 0:
             raise ValueError(f"{path}: has a global static group, which .asog v1 cannot hold; "
                              "export with make-trigs-timeline.py --static-storage per-clip")
-        xyzw = man.get("semantics", {}).get("quaternionOrder") == "xyzw"
+        if quat_order not in (None, "wxyz", "xyzw"):
+            raise ValueError(f"quat_order {quat_order!r}, expected 'wxyz' or 'xyzw'")
+        xyzw = (quat_order or man.get("semantics", {}).get("quaternionOrder")) == "xyzw"
 
         def tensor(t: dict) -> np.ndarray:
             f.seek(header.payload_offset + t["byteOffset"])

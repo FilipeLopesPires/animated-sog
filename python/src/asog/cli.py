@@ -31,6 +31,9 @@ def _encode_args(p: argparse.ArgumentParser) -> None:
 
 def _source_args(p: argparse.ArgumentParser) -> None:
     """Fixes for .trigsbin sources other than the flip-book pipeline's (which flips its checkpoint itself)."""
+    p.add_argument("--quat-order", choices=("wxyz", "xyzw"),
+                   help="override the source's quaternion order label (wxyz for Open4DGS exports of trainer "
+                        "checkpoints, which store wxyz but label it xyzw)")
     p.add_argument("--palette-device", choices=("cuda", "cpu"), help="SH palette k-means device (default: CUDA if available)")
 
 
@@ -63,7 +66,7 @@ def _pick(args: argparse.Namespace, names: tuple[str, ...]) -> dict:
 
 def cmd_encode(args: argparse.Namespace) -> None:
     from .encode import encode
-    encode(args.src, args.dst, audio=args.audio,
+    encode(args.src, args.dst, audio=args.audio, quat_order=args.quat_order,
            palette_device=args.palette_device, **_pick(args, ENCODE_OPTIONS))
 
 
