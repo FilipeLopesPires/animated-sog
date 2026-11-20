@@ -168,3 +168,21 @@ not been retrained yet.
 From ² to ³, quantisation and pruning 30% of the splats cost about 2.6 dB. `asog check` against the
 `.trigsbin` gives a centre error over each splat's visible life of 3.3 mm median, 22 mm p99 at the default
 `qp 2`, `qa 8`.
+
+## Training on a cloud GPU
+
+`docker/trainer/Dockerfile` builds an image with the Open4DGS trainer and exporter (cloned at fixed
+commits, built for compute capability 8.0–12.0) and this package in one environment, with
+`ASOG_TRIGS_PYTHON` and `ASOG_OPEN4DGS_CORE` already set. GitHub Actions publishes it as
+`ghcr.io/arrival-space/animated-sog-trainer:latest`. On a pod (e.g. RunPod, with TCP port 22 exposed and
+your public key in `PUBLIC_KEY`):
+
+```
+rsync -a frames/ root@<pod>:/workspace/frames/          # one PLY per frame
+ssh root@<pod> "asog flipbook run /workspace/frames /workspace/run --rotation=-90,0,0 \
+    --target-count 800000 --steps 80000 --prune 0 --qp 1 --qa 4"
+scp root@<pod>:/workspace/run/clip.asog .
+```
+
+A GPU with more memory (and a machine with more RAM for the trainer's image cache) allows larger training
+images and more views than a 16 GB card: the cache holds frames × views × width × height × 4 bytes.
