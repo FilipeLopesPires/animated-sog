@@ -103,6 +103,7 @@ renderer.setAnimationLoop((timestamp) => {
 
 // ---------------------------------------------------------------- load
 $("loader-name").textContent = `${decodeURIComponent(src.split("/").pop())} · ${viewer.device}`;
+loader.hidden = false; // hidden in the page, so a cached older script or an early failure leaves no stuck loader
 try {
     const player = await AsogThreePlayer.load(renderer, src, scene, {
         getTime: () => clock.now(),

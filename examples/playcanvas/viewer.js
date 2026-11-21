@@ -131,6 +131,7 @@ app.on("update", (dt) => {
 // ---------------------------------------------------------------- load
 showInfo();
 $("loader-name").textContent = `${decodeURIComponent(src.split("/").pop())} · ${viewer.device}`;
+loader.hidden = false; // hidden in the page, so a cached older script or an early failure leaves no stuck loader
 try {
     const player = await AsogPlayer.load(app, src, app.root, {
         getTime: () => clock.now(),
