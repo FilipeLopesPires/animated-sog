@@ -9,6 +9,7 @@ const soundVolume = params.has("volume") ? Number(params.get("volume")) : 1;
 
 const $ = (id) => document.getElementById(id);
 const info = $("info"), playButton = $("play"), scrub = $("scrub"), clockLabel = $("clock"), soundButton = $("sound");
+const loader = $("loader"), loaderPct = $("loader-pct"), loaderFill = $("loader-fill");
 
 // ---------------------------------------------------------------- renderer
 const canvas = $("canvas");
@@ -101,12 +102,15 @@ renderer.setAnimationLoop((timestamp) => {
 });
 
 // ---------------------------------------------------------------- load
-info.textContent = `Loading ${src} (${viewer.device})…`;
+$("loader-name").textContent = `${decodeURIComponent(src.split("/").pop())} · ${viewer.device}`;
 try {
     const player = await AsogThreePlayer.load(renderer, src, scene, {
         getTime: () => clock.now(),
         volume: 0, // muted until "Enable sound"
-        onProgress: (p) => (info.textContent = `Loading ${src}: ${Math.round(p * 100)} %`),
+        onProgress: (p) => {
+            loaderPct.textContent = `${Math.round(p * 100)} %`;
+            loaderFill.style.width = `${p * 100}%`;
+        },
     });
     viewer.player = player;
     scrub.max = String(player.duration);
@@ -131,8 +135,10 @@ try {
         });
     }
     if (player.audioError) console.error("soundtrack:", player.audioError);
+    loader.hidden = true;
     showInfo();
 } catch (e) {
+    loader.hidden = true;
     info.innerHTML = "";
     const err = document.createElement("span");
     err.id = "error";

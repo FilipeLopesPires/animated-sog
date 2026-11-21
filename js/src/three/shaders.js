@@ -192,7 +192,7 @@ void main(void) {
     modifySplatColor(center, color);
 
     out0 = uvec4(floatBitsToUint(center), packColor(color));
-    out1 = uvec4(packHalf2x16(rotation.xy), packHalf2x16(rotation.zw), packHalf2x16(scale.xy), packHalf2x16(vec2(scale.z, 0.0)));
+    out1 = uvec4(packHalf2x16(rotation.xy), packHalf2x16(rotation.zw), packHalf2x16(scale.xy), packHalf2x16(vec2(scale.z, clamp(color.a, 0.0, 1.0))));   // opacity as a half: 8 bits drop faint splats
 }
 `;
 
@@ -237,7 +237,8 @@ void main(void) {
     int width = textureSize(uWork0, 0).x;
     ivec2 uv = ivec2(int(splatIndex) % width, int(splatIndex) / width);
     uvec4 w0 = texelFetch(uWork0, uv, 0);
-    vec4 color = unpackColor(w0.w);
+    uvec4 w1 = texelFetch(uWork1, uv, 0);
+    vec4 color = vec4(unpackColor(w0.w).rgb, unpackHalf2x16(w1.w).y);
     if (color.a <= uAlphaClip) {
         gl_Position = discardVec;
         return;
@@ -251,7 +252,6 @@ void main(void) {
     vec4 proj = projectionMatrix * view;
     proj.z = clamp(proj.z, -abs(proj.w), abs(proj.w));
 
-    uvec4 w1 = texelFetch(uWork1, uv, 0);
     vec4 rotation = vec4(unpackHalf2x16(w1.x), unpackHalf2x16(w1.y));
     vec3 scale = vec3(unpackHalf2x16(w1.z), unpackHalf2x16(w1.w).x);
     mat3 rot = quatToMat3(rotation.wxyz);
