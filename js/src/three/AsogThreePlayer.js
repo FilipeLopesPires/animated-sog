@@ -97,6 +97,8 @@ export class AsogThreePlayer {
         this._sortSpare = null; // the index buffer the worker fills next
         this._sortBusy = false;
         this._sortTime = NaN;
+        this._sortSent = 0;
+        this._sortMs = NaN; // smoothed time a sort takes, round trip
         this._sortRow = [NaN, NaN, NaN, NaN];
         this._prevTime = NaN;
         /** @type {THREE.Audio | THREE.PositionalAudio | null} */
@@ -405,7 +407,10 @@ export class AsogThreePlayer {
             this._sortRow = row;
             const indices = this._sortSpare;
             this._sortSpare = null;
-            this._worker.postMessage({ sort: true, time: this.time, depthRow: row, indices }, [indices]);
+            this._sortSent = performance.now();
+            // the order is drawn until the next one arrives: keep the splats that appear meanwhile
+            const margin = Math.min(1, 0.1 + (2 * (this._sortMs || 0)) / 1000);
+            this._worker.postMessage({ sort: true, time: this.time, depthRow: row, indices, margin }, [indices]);
         }
 
         if (this._sound) {
@@ -437,6 +442,8 @@ export class AsogThreePlayer {
 
     _onSorted({ count, indices }) {
         this._sortBusy = false;
+        const ms = performance.now() - this._sortSent;
+        this._sortMs = Number.isNaN(this._sortMs) ? ms : 0.8 * this._sortMs + 0.2 * ms;
         if (!this.object) return;
         const geometry = this.object.geometry;
         const order = /** @type {THREE.InstancedBufferAttribute} */ (geometry.getAttribute("splatIndex"));

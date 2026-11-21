@@ -69,6 +69,19 @@ test("sortSplats: no visible splats outside every clip's active range", () => {
     assert.equal(count, 0);
 });
 
+test("sortSplats margin: also keeps the splats visible within that time, nothing else", () => {
+    const n = data.count, t = 0.4, margin = 0.1, row = [0, 0, 1, 0];
+    const want = new Set();
+    for (let k = -10; k <= 10; k++) for (const i of visibleAt(t + (k / 10) * margin)) want.add(i);
+    const indices = new Uint32Array(n);
+    const count = sortSplats(n, centersAt(t), data.motion.A, data.clips, t, row, indices, {}, margin);
+    const got = new Set(indices.subarray(0, count));
+    assert.equal(got.size, count);
+    for (const i of want) assert.ok(got.has(i), `splat ${i} visible within the margin is missing`);
+    assert.ok(count > visibleAt(t).size, "the margin adds splats");
+    assert.ok(count <= visibleAt(t).size * 3, "but not the whole clip");
+});
+
 test("the sort worker's sort message gives sortSplats' order on the centres at that time", () => {
     const n = data.count, t = 0.4, row = [0.1, 0.2, -0.97, 3];
     const posted = [];
