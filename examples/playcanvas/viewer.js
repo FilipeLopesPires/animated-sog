@@ -3,7 +3,7 @@ import * as pc from "playcanvas";
 import { AsogPlayer } from "../../js/src/playcanvas/index.js";
 
 const params = new URLSearchParams(location.search);
-const src = params.get("src") ?? "../../test-data/rubloff-6s.asog";
+const src = params.get("src") ?? "../../test-data/rubloff-6s-4k.asog";
 const useWebgpu = params.has("webgpu") ? params.get("webgpu") !== "0" : !!navigator.gpu;
 const soundVolume = params.has("volume") ? Number(params.get("volume")) : 1;
 

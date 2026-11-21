@@ -4,7 +4,7 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { AsogThreePlayer } from "../../js/src/three/index.js";
 
 const params = new URLSearchParams(location.search);
-const src = params.get("src") ?? "../../test-data/rubloff-6s.asog";
+const src = params.get("src") ?? "../../test-data/rubloff-6s-4k.asog";
 const soundVolume = params.has("volume") ? Number(params.get("volume")) : 1;
 
 const $ = (id) => document.getElementById(id);
