@@ -4,7 +4,7 @@
 |---|---|---|
 | `rubloff-1s.asog` | 1 s (30 frames) of the Rubloff flip book, distilled with TRiGS (150 k splats, 105 k after pruning), no sound | 3.2 MB |
 | `rubloff-6s.asog` | 6 s (180 frames) of the Rubloff flip book, distilled with TRiGS (400 k splats, encoded `--prune 0 --qp 1 --qa 4`), no sound | 12.4 MB |
-| `rubloff-6s-4k.asog` | the same 6 s, distilled with TRiGS at 891 k splats (every 18th frame a keyframe, 1024², 120 views, 150 k steps on an H100), encoded `--prune 0 --qp 1 --qa 4`, with his voice as the soundtrack (85 kB mp3); the viewers' default | 30.0 MB |
+| `rubloff-6s-4k.asog` | the same 6 s at 891 k splats: every frame a keyframe, thinned to 891 k (opacity-weighted, 3x the share for the head), no opacity regulariser, no relocation, 1056x1536 training framing, 120 views, 100 k steps on an H100, encoded `--prune 0 --qp 1 --qa 4`, with his voice as the soundtrack (85 kB mp3); the viewers' default | 27.0 MB |
 
 The Rubloff flip book is [IR-MichaelRF](https://github.com/Infinite-Realities-Research/IR-MichaelRF): Michael Rubloff
 ([radiancefields.com](https://radiancefields.com/)) captured by [Infinite Realities](https://www.ir-ltd.net/), part of the
