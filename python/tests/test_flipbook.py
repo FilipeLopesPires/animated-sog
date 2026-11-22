@@ -163,6 +163,28 @@ def test_train_passes_sigma_t(monkeypatch, tmp_path):
     assert calls[1][i + 1] == "0.6"
 
 
+def test_train_dense_recipe(monkeypatch, tmp_path):
+    from asog.flipbook import open4dgs
+
+    calls = []
+    monkeypatch.setattr(open4dgs, "_run", calls.append)
+    open4dgs.train(tmp_path, tmp_path / "run", trigs_python="py")
+    open4dgs.train(tmp_path, tmp_path / "run", image_size=1536, recipe="dense", head_boost=3,
+                   trainer_args=["--config.ckpt-every", "10000"], trigs_python="py")
+    classic, dense = calls
+    value = lambda cmd, flag: cmd[cmd.index(flag) + 1]
+    assert value(classic, "--config.keyframe-stride") == "9" and "--config.no-relocate" not in classic
+    assert value(dense, "--config.keyframe-stride") == "1"
+    assert (value(dense, "--camera.width"), value(dense, "--camera.height")) == ("1056", "1536")
+    assert value(dense, "--config.init-sigma-t") == "0.125"
+    assert value(dense, "--config.target-random-head-boost") == "3"
+    assert value(dense, "--config.ckpt-every") == "10000"
+    for flag in ("--config.target-random", "--config.no-relocate", "--config.lambda-reg", "--config.sigma-t-max"):
+        assert flag in dense
+    with pytest.raises(ValueError):
+        open4dgs.train(tmp_path, tmp_path / "run", recipe="fast", trigs_python="py")
+
+
 def test_cameras():
     np.testing.assert_allclose(euler_matrix("-90,0,0") @ [0, 0, 1], [0, 1, 0], atol=1e-12)   # z up -> y up
     np.testing.assert_allclose(euler_matrix("0,0,180") @ [1, 2, 3], [-1, -2, 3], atol=1e-12)

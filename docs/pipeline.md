@@ -142,6 +142,46 @@ asog flipbook run <flipbook dir> <work> --start 0 --count 180 --stride 2 --rotat
 
 Reuses `<work>/frames` and `<work>/train/trigs_ckpt.pt` when they exist (delete them to redo).
 
+## Dense recipe (`--recipe dense`)
+
+```
+asog flipbook train <work>/frames <work>/train --recipe dense --fps 30 --target-count 891130 \
+    --steps 100000 --latitude-steps 10 --image-size 1536 --head-boost 3
+```
+
+The recipe the clips in `test-data` and the arrival.space demo space are trained with since November 2026. It needs
+the trainer options of the arrival-space fork of open4dgs-trigs (`docker/trainer/setup.sh` installs it).
+
+- **Every frame seeds the canonical set** (`keyframe-stride 1`), thinned at random to the budget as each keyframe
+  loads (`target-random`, opacity-weighted). Keyframe spacing, not the splat count, decided quality: on 2.2 s of
+  the basketball clip, at the same 0.98M splats, every 16th frame gave 29.4 dB held-out, every 4th 36.4 dB, every
+  frame with free lifetimes 41.8 dB. The trainer's farthest-point sampling would take hours at these counts.
+- **Lifetimes start at 0.125 s and are free to change** (`lr-durations 5e-3`, capped at 1 s): fast parts
+  (hands, mouth) settle around 0.1 s, still parts grow longer.
+- **No relocation** (`no-relocate`): it respawns dead splats as copies of donors at full opacity; with faint
+  source splats (the basketball's median opacity is 0.05) opacity piled up, the loss climbed from step 2,000 and
+  GPU memory doubled. **No opacity regulariser** (`lambda-reg 0`): without relocation it only kills splats
+  (Rubloff: 30% dead instead of 5%, −1 dB on the face).
+- Positions learn at a tenth of the default rate (`lr-means 1.6e-5`); the opacity ceiling stays on for the
+  whole run; the orbit starts at −20° latitude instead of under the floor and is cropped to a standing person
+  (1056×1536 at `--image-size 1536`, 140 GB of ground truth for 180 frames × 120 views).
+- **Budget:** aim for about as many splats on screen per frame as the source frames have. Rubloff's source has
+  89k splats per frame; 891k splats over 6 s put 87k on screen. Three times that (2.7M) added only +0.9 dB body
+  and +0.4 dB face, because 39% of the extra splats die and the rest buy shorter lifetimes, not detail.
+- Encode with `--prune 0`: `--prune` ranks splats by opacity × area × lifetime and removes the short-lived,
+  fast-moving ones first.
+
+| Clip | Recipe | Splats | `.asog` | Held-out quality |
+|---|---|---|---|---|
+| Rubloff, 6 s | classic (every 18th frame, 150k steps) | 891k | 30.0 MB | body 43.19 dB, face 33.49 dB ¹ |
+| Rubloff, 6 s | dense, head boost 3 | 891k | 27.0 MB | body 43.97 dB, face 35.76 dB ¹ |
+| Rubloff, 6 s | dense, head boost 3, 150k steps | 2.7M | 78.1 MB | body 44.87 dB, face 36.15 dB ¹ |
+| Basketball, 10 s, 15 fps | classic (every 16th frame) | 3.16M | 80.9 MB | 33.95 dB, worst frame 27.3 ² |
+| Basketball, 10 s, 15 fps | dense | 1.5M | 39.4 MB | 41.74 dB, worst frame 37.9 ² |
+
+¹ `.asog` against the source frames, 20 frames, body from 8 directions, face close-ups from 4.
+² the checkpoint against the source frames, every 2nd frame, 8 views between the training orbit's.
+
 ## Results (Rubloff)
 
 | | frames | splats | PSNR | jitter vs teacher | median life | size |

@@ -27,8 +27,9 @@ log = logging.getLogger(__name__)
 
 
 def run(source: str | Path, work: str | Path, *, start: int = 0, count: int | None = None, stride: int = 1,
-        rotation: str | None = None, fps: float = 30, keyframe_stride: int = 9, target_count: int = 400_000,
+        rotation: str | None = None, fps: float = 30, keyframe_stride: int | None = None, target_count: int = 400_000,
         steps: int = 60_000, latitude_steps: int = 6, image_size: int = 512, sigma_t: float | None = None,
+        recipe: str = "classic", head_boost: float = 1.0, trainer_args: list[str] | tuple[str, ...] = (),
         trigs_python: str | Path | None = None,
         open4dgs_core: str | Path | None = None, audio: str | Path | None = None, **encode_options) -> Evaluation:
     """Stage, train, flip, export, encode and evaluate one segment of the flip book in `source`.
@@ -47,7 +48,7 @@ def run(source: str | Path, work: str | Path, *, start: int = 0, count: int | No
     else:
         train(frames, ckpt.parent, fps=fps, keyframe_stride=keyframe_stride,
               target_count=target_count, steps=steps, latitude_steps=latitude_steps, image_size=image_size,
-              sigma_t=sigma_t, trigs_python=trigs_python)
+              sigma_t=sigma_t, recipe=recipe, head_boost=head_boost, trainer_args=trainer_args, trigs_python=trigs_python)
     flip_checkpoint(ckpt, work / "ckpt_ydown.pt")
     export([work / "ckpt_ydown.pt"], work / "clip.trigsbin", trigs_python=trigs_python, open4dgs_core=open4dgs_core)
     stats = encode(work / "clip.trigsbin", work / "clip.asog", audio=audio, **encode_options)

@@ -10,11 +10,13 @@ from __future__ import annotations
 
 import argparse
 import logging
+import shlex
 from pathlib import Path
 
 ENCODE_OPTIONS = ("qp", "qa", "prune", "mbits", "tbits", "lsbits", "shk", "level")
 STAGE_OPTIONS = ("start", "count", "stride", "rotation")
-TRAIN_OPTIONS = ("fps", "keyframe_stride", "target_count", "steps", "latitude_steps", "image_size", "sigma_t")
+TRAIN_OPTIONS = ("fps", "keyframe_stride", "target_count", "steps", "latitude_steps", "image_size", "sigma_t",
+                 "recipe", "head_boost", "trainer_args")
 
 
 def _encode_args(p: argparse.ArgumentParser) -> None:
@@ -31,7 +33,7 @@ def _encode_args(p: argparse.ArgumentParser) -> None:
 
 def _train_args(p: argparse.ArgumentParser) -> None:
     p.add_argument("--fps", type=float, default=30, help="training frame rate")
-    p.add_argument("--keyframe-stride", type=int, default=9, help="every n-th frame seeds the 4D init")
+    p.add_argument("--keyframe-stride", type=int, help="every n-th frame seeds the 4D init (default 9; 1 with --recipe dense)")
     p.add_argument("--target-count", type=int, default=400_000, help="splats")
     p.add_argument("--steps", type=int, default=60_000, help="training steps")
     p.add_argument("--latitude-steps", type=int, default=6, help="rows of the 12-column training orbit")
@@ -39,6 +41,11 @@ def _train_args(p: argparse.ArgumentParser) -> None:
     p.add_argument("--sigma-t", type=float, help="initial splat lifetime in seconds (default: one keyframe gap, "
                                                 "keyframe stride / fps); splats are drawn within about 4 sigma-t of "
                                                 "their keyframe, so a long one keeps most of them active every frame")
+    p.add_argument("--recipe", choices=("classic", "dense"), default="classic",
+                   help="dense: the flip-book recipe (every frame a keyframe, random thinning, short free lifetimes, no "
+                        "relocation; needs the arrival-space fork of open4dgs-trigs, see docs/pipeline.md)")
+    p.add_argument("--head-boost", type=float, default=1.0, help="dense: share of splats kept for the head (3 for face close-ups)")
+    p.add_argument("--trainer-args", type=shlex.split, default=[], help="extra trainer options, appended as given")
 
 
 def _tool_args(p: argparse.ArgumentParser, core: bool) -> None:
