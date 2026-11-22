@@ -41,14 +41,22 @@ const clock = {
 };
 
 // zoom 0 = the whole performer, 1 = the face; the target and distance follow it
-const view = { yaw: 0, pitch: -4, zoom: 0, body: new pc.Vec3(0, 1, 0), head: new pc.Vec3(0, 1.6, 0), far: 3, near: 0.4 };
+const view = { yaw: 0, pitch: -4, zoom: 0, body: new pc.Vec3(0, 1, 0), head: new pc.Vec3(0, 1.6, 0), headTop: 1.75, headR: 0.13, far: 3 };
 const camTarget = new pc.Vec3(), camRotation = new pc.Quat(), camOffset = new pc.Vec3();
+
+const TAN_V = Math.tan(25 * Math.PI / 180); // half the camera's vertical field of view (fov 50)
 
 function placeCamera(camera) {
     const z = Math.min(Math.max(view.zoom, 0), 1);
     const ease = z * z * (3 - 2 * z);
+    // closest: the whole head fits, also across a narrow (portrait) screen
+    const tan = TAN_V * Math.min(1, window.innerWidth / window.innerHeight);
+    const near = (1.2 * view.headR) / tan;
+    const distance = Math.exp(Math.log(view.far) + (Math.log(Math.min(near, view.far)) - Math.log(view.far)) * z);
     camTarget.lerp(view.body, view.head, ease);
-    const distance = Math.exp(Math.log(view.far) + (Math.log(view.near) - Math.log(view.far)) * z);
+    // never cut the face: aim high enough that the top of the head stays in the picture
+    const top = view.headTop + 0.25 * view.headR;
+    camTarget.y = Math.min(Math.max(camTarget.y, top - distance * TAN_V), Math.max(view.head.y, camTarget.y));
     camRotation.setFromEulerAngles(view.pitch, view.yaw, 0);
     camRotation.transformVector(pc.Vec3.BACK, camOffset).mulScalar(distance);
     camera.setPosition(camOffset.add(camTarget));
@@ -215,8 +223,9 @@ try {
     const height = hi.y - lo.y, size = Math.max(hi.x - lo.x, height, hi.z - lo.z);
     view.body.set((lo.x + hi.x) / 2, (lo.y + hi.y) / 2, (lo.z + hi.z) / 2);
     view.head.set(view.body.x, hi.y - 0.08 * height, view.body.z);
+    view.headTop = hi.y;
+    view.headR = 0.085 * height; // half the head's height, hair included
     view.far = size / (2 * Math.tan(25 * Math.PI / 180)) * 1.15;
-    view.near = 0.22 * height;
 
     sound = pb.hasAudio ? [pb, B.app] : pa.hasAudio ? [pa, A.app] : null;
     if (sound) {

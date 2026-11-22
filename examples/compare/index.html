@@ -48,6 +48,15 @@
         #loader-track { width: min(320px, 70vw); height: 4px; border-radius: 2px; background: rgba(255, 255, 255, 0.15); overflow: hidden; }
         #loader-fill { display: block; width: 0; height: 100%; background: #9cf; transition: width 0.15s linear; }
         #loader-name { color: #999; max-width: 80vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        #hint .touch { display: none; }
+        @media (pointer: coarse) { #hint .mouse { display: none; } #hint .touch { display: inline; } }
+        @media (max-width: 600px) {
+            #bar { gap: 6px; padding: 8px; }
+            #bar button { min-width: 0; padding: 5px 8px; }
+            #clock { min-width: 0; font-size: 12px; }
+            #scrub { min-width: 60px; }
+            .label b { font-size: 17px; }
+        }
         [hidden] { display: none !important; }
     </style>
 </head>
@@ -58,7 +67,7 @@
     <div id="line"></div>
     <div class="label" id="label-a"><b>A</b><span></span></div>
     <div class="label" id="label-b"><b>B</b><span></span></div>
-    <div id="hint">Move the mouse to compare · drag to turn · wheel to zoom into the face</div>
+    <div id="hint"><span class="mouse">Move the mouse to compare · drag to turn · wheel to zoom into the face</span><span class="touch">Drag the line · drag to turn · pinch to zoom</span></div>
     <div id="error" hidden></div>
     <div id="loader" hidden><div id="loader-pct">0 %</div><div id="loader-track"><i id="loader-fill"></i></div><div id="loader-name"></div></div>
     <div id="bar">
