@@ -8,7 +8,7 @@
     <!--
         Two .asog clips side by side on one camera and one clock: the left of the line shows clip A, the right clip B.
         Move the mouse to move the line (touch: drag it), drag to turn, wheel or pinch to zoom; zooming in moves the
-        camera onto the face. URL parameters: ?a=<url> ?b=<url> ?la=<label A> ?lb=<label B> ?webgpu=0|1 ?volume=0..1
+        camera onto the face. URL parameters: ?a=<url> ?b=<url> ?la=<label A> ?lb=<label B> ?speed=1|0.5|0.25 ?webgpu=0|1 ?volume=0..1
     -->
     <script type="importmap">
         {
@@ -63,6 +63,7 @@
     <div id="loader" hidden><div id="loader-pct">0 %</div><div id="loader-track"><i id="loader-fill"></i></div><div id="loader-name"></div></div>
     <div id="bar">
         <button id="play" type="button">Pause</button>
+        <button id="speed" type="button" title="Slow motion">1×</button>
         <input id="scrub" type="range" min="0" max="1" step="0.001" value="0" aria-label="Time">
         <span id="clock">0.00 / 0.00 s</span>
         <button id="sound" type="button" hidden>Enable sound</button>

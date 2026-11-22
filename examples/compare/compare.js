@@ -13,7 +13,7 @@ const soundVolume = params.has("volume") ? Number(params.get("volume")) : 1;
 
 const $ = (id) => document.getElementById(id);
 const touch = $("touch"), line = $("line"), canvasB = $("canvas-b");
-const playButton = $("play"), scrub = $("scrub"), clockLabel = $("clock"), soundButton = $("sound");
+const playButton = $("play"), speedButton = $("speed"), scrub = $("scrub"), clockLabel = $("clock"), soundButton = $("sound");
 const loader = $("loader"), loaderPct = $("loader-pct"), loaderFill = $("loader-fill");
 
 function fileName(src) {
@@ -23,14 +23,20 @@ function fileName(src) {
 // ---------------------------------------------------------------- shared clock and camera
 const clock = {
     playing: true,
+    rate: 1, // slow motion: 0.5, 0.25
     base: 0,
     start: performance.now() / 1000,
     now() {
-        return this.playing ? this.base + performance.now() / 1000 - this.start : this.base;
+        return this.playing ? this.base + (performance.now() / 1000 - this.start) * this.rate : this.base;
     },
     set(t) {
         this.base = t;
         this.start = performance.now() / 1000;
+    },
+    setRate(rate) {
+        const t = this.now();
+        this.rate = rate;
+        this.set(t);
     },
 };
 
@@ -144,6 +150,22 @@ scrub.addEventListener("pointerdown", () => (scrubbing = true));
 scrub.addEventListener("pointerup", () => (scrubbing = false));
 scrub.addEventListener("input", () => clock.set(Number(scrub.value)));
 
+// slow motion: 1x -> 1/2x -> 1/4x; the soundtrack pauses while slowed (the player would keep re-syncing it)
+const SPEEDS = [1, 0.5, 0.25];
+let sound = null, soundOn = false;
+function applySound() {
+    if (sound) sound[0].volume = soundOn && clock.rate === 1 ? soundVolume : 0;
+    soundButton.textContent = soundOn ? "Mute" : "Enable sound";
+}
+function setSpeed(rate) {
+    clock.setRate(rate);
+    speedButton.textContent = rate === 1 ? "1×" : rate === 0.5 ? "½×" : "¼×";
+    speedButton.title = rate === 1 ? "Slow motion" : `Slow motion: ${rate}× speed`;
+    applySound();
+}
+speedButton.addEventListener("click", () => setSpeed(SPEEDS[(SPEEDS.indexOf(clock.rate) + 1) % SPEEDS.length]));
+setSpeed(SPEEDS.find((x) => x === Number(params.get("speed"))) ?? 1);
+
 const viewer = { A, B, clock, view, players: [], setSplit };
 window.asogCompare = viewer;
 B.app.on("update", () => {
@@ -196,15 +218,13 @@ try {
     view.far = size / (2 * Math.tan(25 * Math.PI / 180)) * 1.15;
     view.near = 0.22 * height;
 
-    const sound = pb.hasAudio ? [pb, B.app] : pa.hasAudio ? [pa, A.app] : null;
+    sound = pb.hasAudio ? [pb, B.app] : pa.hasAudio ? [pa, A.app] : null;
     if (sound) {
         soundButton.hidden = false;
         soundButton.addEventListener("click", async () => {
-            const [player, app] = sound;
-            const unmute = player.volume === 0;
-            if (unmute) await app.systems.sound.context.resume();
-            player.volume = unmute ? soundVolume : 0;
-            soundButton.textContent = unmute ? "Mute" : "Enable sound";
+            soundOn = !soundOn;
+            if (soundOn) await sound[1].systems.sound.context.resume();
+            applySound();
         });
     }
     loader.hidden = true;
