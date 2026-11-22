@@ -103,7 +103,7 @@ def read(path: str | Path) -> TrigsRuntime:
             quats[s] = q[:, [3, 0, 1, 2]] if xyzw else q
             opacity[s] = 1 / (1 + np.exp(-tensor(T["opacities"]).reshape(c).astype(np.float64)))
             sh0[s] = tensor(T["sh0"]).reshape(c, 3)
-            if "shN" in T:
+            if shN is not None and "shN" in T:
                 k = T["shN"]["shape"][1]
                 shN[s, :k] = tensor(T["shN"]).reshape(c, k, 3)
             clip_index[s] = ci

@@ -14,7 +14,7 @@ from pathlib import Path
 
 ENCODE_OPTIONS = ("qp", "qa", "prune", "mbits", "tbits", "lsbits", "shk", "level")
 STAGE_OPTIONS = ("start", "count", "stride", "rotation")
-TRAIN_OPTIONS = ("fps", "keyframe_stride", "target_count", "steps", "latitude_steps", "image_size")
+TRAIN_OPTIONS = ("fps", "keyframe_stride", "target_count", "steps", "latitude_steps", "image_size", "sigma_t")
 
 
 def _encode_args(p: argparse.ArgumentParser) -> None:
@@ -36,6 +36,9 @@ def _train_args(p: argparse.ArgumentParser) -> None:
     p.add_argument("--steps", type=int, default=60_000, help="training steps")
     p.add_argument("--latitude-steps", type=int, default=6, help="rows of the 12-column training orbit")
     p.add_argument("--image-size", type=int, default=512, help="training image width and height (px)")
+    p.add_argument("--sigma-t", type=float, help="initial splat lifetime in seconds (default: one keyframe gap, "
+                                                "keyframe stride / fps); splats are drawn within about 4 sigma-t of "
+                                                "their keyframe, so a long one keeps most of them active every frame")
 
 
 def _tool_args(p: argparse.ArgumentParser, core: bool) -> None:

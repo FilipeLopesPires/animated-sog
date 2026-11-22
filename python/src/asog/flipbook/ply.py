@@ -1,5 +1,5 @@
-"""3D Gaussian splatting PLY files (the INRIA 3DGS layout, binary little endian): reading, and rotating
-a frame in place of its file layout."""
+"""3D Gaussian splatting PLY files (binary little endian): reading, rotating, and writing the original INRIA
+3DGS layout, the only one the Open4DGS trainer reads."""
 
 from __future__ import annotations
 
@@ -80,6 +80,32 @@ def _rest_names(v: np.ndarray) -> list[str]:
     return sorted((p for p in v.dtype.names if p.startswith("f_rest_")), key=lambda p: int(p[7:]))
 
 
+def trainer_layout(v: np.ndarray) -> list[str]:
+    """The original INRIA 3DGS property order for the vertex table `v`: positions, normals, SH, opacity,
+    scales, rotation (the Open4DGS trainer rejects any other order, and a file without normals)."""
+    return ["x", "y", "z", "nx", "ny", "nz", "f_dc_0", "f_dc_1", "f_dc_2", *_rest_names(v),
+            "opacity", "scale_0", "scale_1", "scale_2", "rot_0", "rot_1", "rot_2", "rot_3"]
+
+
+def in_trainer_layout(path: str | Path) -> bool:
+    _, v = read_vertices(path)
+    return list(v.dtype.names) == trainer_layout(v) and all(v.dtype[n] == np.dtype("<f4") for n in v.dtype.names)
+
+
+def write_trainer_layout(dst: str | Path, v: np.ndarray) -> None:
+    """Write the vertex table `v` in the trainer's layout, all float32; normals are zero when `v` has none."""
+    names = trainer_layout(v)
+    out = np.zeros(len(v), dtype=[(n, "<f4") for n in names])
+    for n in names:
+        if n in v.dtype.names:
+            out[n] = v[n]
+    header = f"ply\nformat binary_little_endian 1.0\nelement vertex {len(v)}\n"
+    header += "".join(f"property float {n}\n" for n in names) + "end_header\n"
+    with open(dst, "wb") as f:
+        f.write(header.encode("ascii"))
+        out.tofile(f)
+
+
 def quat_from_matrix(R: np.ndarray) -> np.ndarray:
     """Unit wxyz quaternion of a rotation matrix."""
     w = np.sqrt(max(0.0, 1 + R[0, 0] + R[1, 1] + R[2, 2])) / 2
@@ -91,9 +117,9 @@ def quat_from_matrix(R: np.ndarray) -> np.ndarray:
 
 
 def rotate_ply(src: str | Path, dst: str | Path, R: np.ndarray) -> None:
-    """Write the frame `src` rotated by `R` (about the origin) to `dst`, keeping its file layout: positions
+    """Write the frame `src` rotated by `R` (about the origin) to `dst`, in the trainer's layout: positions
     and normals rotate, quaternions are pre-multiplied, SH degrees 1..3 go through their rotation matrices."""
-    header, v = read_vertices(src)
+    _, v = read_vertices(src)
     v = v.copy()
 
     def set_cols(keys: tuple[str, ...], values: np.ndarray) -> None:
@@ -111,6 +137,4 @@ def rotate_ply(src: str | Path, dst: str | Path, R: np.ndarray) -> None:
         k = len(rest) // 3
         c = get(rest).reshape(len(v), 3, k)                       # channel-major
         set_cols(tuple(rest), np.einsum("jk,nck->ncj", sh.rotation(R, k), c).reshape(len(v), 3 * k))
-    with open(dst, "wb") as f:
-        f.write(header)
-        v.tofile(f)
+    write_trainer_layout(dst, v)
