@@ -49,26 +49,60 @@ def _run(cmd: list[str]) -> None:
     subprocess.run(cmd, check=True)
 
 
+# The dense recipe for flip books (each frame trained on its own, e.g. per-frame 3DGS exports): every frame seeds the
+# canonical set, thinned at random to the budget, splats live as short as the motion needs, no relocation (it cloned
+# faint splats at full opacity) and no opacity regulariser (it killed splats). Needs the trainer options of the
+# arrival-space fork of open4dgs-trigs (docker/trainer/setup.sh). Measured in docs/pipeline.md ("Dense recipe").
+DENSE_ARGS = [
+    "--config.target-random", "--config.target-random-weight", "opacity", "--config.lambda-reg", "0",
+    "--config.lr-durations", "5e-3", "--config.sigma-t-max", "1.0", "--config.opacity-logit-upper-clamp-until-step", "-1",
+    "--config.no-relocate", "--config.lr-means", "1.6e-5", "--config.knn-recompute-every", "5000",
+    "--camera.latitude-min", "-20", "--camera.fov", "43.3", "--camera.margin", "0.825",
+]
+RECIPES = ("classic", "dense")
+
+
 def train(frames: str | Path, run_dir: str | Path, *, fps: float = 30,
-          keyframe_stride: int = 9, target_count: int = 400_000, steps: int = 60_000, latitude_steps: int = 6,
-          image_size: int = 512, trigs_python: str | Path | None = None) -> Path:
+          keyframe_stride: int | None = None, target_count: int = 400_000, steps: int = 60_000, latitude_steps: int = 6,
+          image_size: int = 512, sigma_t: float | None = None, recipe: str = "classic", head_boost: float = 1.0,
+          trainer_args: list[str] | tuple[str, ...] = (), trigs_python: str | Path | None = None) -> Path:
     """Train TRiGS on the PLY frames in `frames`; returns `<run_dir>/trigs_ckpt.pt` (y up).
 
     The trainer renders its training images from the PLYs on an orbit (12 longitudes x `latitude_steps`
     rows, `image_size` px square) around a y-up scene with its lowest point at y = 0, so the frames must already be there
     (`stage --rotation`); the trainer's own `--transform.rotation` is left at its identity default because
     it rotates SH degrees 2 and 3 wrongly. Its ground-truth cache lives in RAM
-    (about frames x views x image_size^2 x 4 bytes). `keyframe_stride` sets how many frames seed the 4D init; at 3
-    with 400k splats the init's farthest-point sampling took over 14 minutes and filled the GPU, at 9 it
-    starts in seconds. Debug renders and per-frame student PLYs are switched off.
+    (about frames x views x image_size^2 x 4 bytes). `keyframe_stride` sets how many frames seed the 4D init (default
+    9; 1 with the dense recipe). With the classic recipe at 3 and 400k splats the init's farthest-point sampling took
+    over 14 minutes and filled the GPU, at 9 it starts in seconds. `sigma_t` is every splat's initial lifetime in seconds
+    (the trainer's default: one keyframe gap, `keyframe_stride / fps`; 0.125 s with the dense recipe); a splat is drawn
+    within about 4 sigma_t of its keyframe. A long one keeps nearly every splat active in every frame: a 15 fps clip at
+    stride 30 (2 s) ran out of GPU memory around step 2,500 at 1024 px (80 GB H100) and swapped at step 2,100 on a 16 GB
+    card, where 0.6 s held 5 GB.
+
+    `recipe="dense"` adds DENSE_ARGS and frames the orbit cropped to a standing person (portrait, `image_size` high,
+    0.6875 of it wide: 1536 -> 1056). `head_boost` > 1 keeps that many times the share of splats for the head
+    (3 for face close-ups). `trainer_args` are appended as they are. Debug renders and per-frame student PLYs are
+    switched off.
     """
+    if recipe not in RECIPES:
+        raise ValueError(f"recipe {recipe!r}: expected one of {RECIPES}")
+    dense = recipe == "dense"
+    stride = keyframe_stride or (1 if dense else 9)
+    width = 16 * round(image_size * 0.6875 / 16) if dense else image_size
+    if dense and sigma_t is None:
+        sigma_t = 0.125
     run_dir = Path(run_dir)
     _run([interpreter(trigs_python), "-m", "trigs.cli.train_from_plys_upstream",
           "--input-dir", str(frames), "--output-dir", str(run_dir),
           "--camera.latitude-steps", str(latitude_steps),
-          "--camera.width", str(image_size), "--camera.height", str(image_size),
-          "--config.fps", str(fps), "--config.keyframe-stride", str(keyframe_stride),
+          "--camera.width", str(width), "--camera.height", str(image_size),
+          "--config.fps", str(fps), "--config.keyframe-stride", str(stride),
           "--config.target-count", str(target_count), "--config.n-steps", str(steps),
+          *(["--config.init-sigma-t", str(sigma_t)] if sigma_t else []),
+          *(DENSE_ARGS if dense else []),
+          *(["--config.target-random-head-boost", str(head_boost)] if head_boost != 1 else []),
+          *trainer_args,
           "--no-render-debug", "--no-save-plys"])
     return run_dir / "trigs_ckpt.pt"
 

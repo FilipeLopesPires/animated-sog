@@ -23,11 +23,11 @@ def test_stage(tmp_path):
     src = tmp_path / "src"
     src.mkdir()
     for i in range(10):
-        (src / f"Frame{i:04d}.ply").write_bytes(bytes([i]))
+        _write_ply(src / f"Frame{i:04d}.ply", 5 + i, np.random.default_rng(i))
     (src / "notes.txt").write_text("not a frame")
     staged = stage(src, tmp_path / "out", start=1, count=4, stride=2)
     assert [p.name for p in staged] == ["Frame0001.ply", "Frame0003.ply", "Frame0005.ply", "Frame0007.ply"]
-    assert staged[2].read_bytes() == bytes([5])
+    assert staged[2].read_bytes() == (src / "Frame0005.ply").read_bytes()
     with pytest.raises(FileExistsError):
         stage(src, tmp_path / "out")
     with pytest.raises(ValueError, match="only 3 frames"):
@@ -93,6 +93,29 @@ def test_rotate_ply_then_inverse_is_identity(tmp_path):
     assert (tmp_path / "f.ply").read_bytes().split(b"end_header")[0] == (tmp_path / "back.ply").read_bytes().split(b"end_header")[0]
 
 
+def test_stage_writes_trainer_layout(tmp_path):
+    """A frame without normals or with another property order (PlayCanvas compressed PLY, unpacked) comes
+    out in the original 3DGS layout with the same splats."""
+    rng = np.random.default_rng(3)
+    n = 30
+    cols = {k: rng.normal(size=n) for k in ("x", "y", "z", "f_dc_0", "f_dc_1", "f_dc_2", "opacity",
+                                             "rot_0", "rot_1", "rot_2", "rot_3", "scale_0", "scale_1", "scale_2")}
+    src = tmp_path / "src"
+    src.mkdir()
+    head = "ply\nformat binary_little_endian 1.0\nelement vertex %d\n" % n
+    head += "".join(f"property float {k}\n" for k in cols) + "end_header\n"
+    (src / "a.ply").write_bytes(head.encode() + np.stack(list(cols.values()), 1).astype("<f4").tobytes())
+    for rotation, name in ((None, "plain"), ("0,0,180", "rotated")):
+        out = stage(src, tmp_path / name, rotation=rotation)[0]
+        header = out.read_bytes().split(b"end_header")[0].decode()
+        assert [l.split()[-1] for l in header.splitlines() if l.startswith("property")] == [
+            "x", "y", "z", "nx", "ny", "nz", "f_dc_0", "f_dc_1", "f_dc_2",
+            "opacity", "scale_0", "scale_1", "scale_2", "rot_0", "rot_1", "rot_2", "rot_3"]
+    a, plain = read_ply(src / "a.ply"), read_ply(tmp_path / "plain" / "a.ply")
+    for k in ("means", "log_scales", "quats", "opacity", "sh"):
+        np.testing.assert_allclose(getattr(plain, k), getattr(a, k), rtol=1e-6, err_msg=k)
+
+
 def test_stage_rotates(tmp_path):
     src = tmp_path / "src"
     src.mkdir()
@@ -126,6 +149,40 @@ def test_rotated_frame_renders_identically(tmp_path, rotation):
     b = _render(r.means, r.quats, r.log_scales, r.opacity, r.sh, views @ homogeneous(R.T), K, 256)
     assert a.mean() > 0.05
     assert 10 * np.log10(1 / ((a - b) ** 2).mean()) > 100
+
+
+def test_train_passes_sigma_t(monkeypatch, tmp_path):
+    from asog.flipbook import open4dgs
+
+    calls = []
+    monkeypatch.setattr(open4dgs, "_run", calls.append)
+    open4dgs.train(tmp_path, tmp_path / "run", fps=15, keyframe_stride=30, trigs_python="py")
+    open4dgs.train(tmp_path, tmp_path / "run", fps=15, keyframe_stride=30, sigma_t=0.6, trigs_python="py")
+    assert "--config.init-sigma-t" not in calls[0]
+    i = calls[1].index("--config.init-sigma-t")
+    assert calls[1][i + 1] == "0.6"
+
+
+def test_train_dense_recipe(monkeypatch, tmp_path):
+    from asog.flipbook import open4dgs
+
+    calls = []
+    monkeypatch.setattr(open4dgs, "_run", calls.append)
+    open4dgs.train(tmp_path, tmp_path / "run", trigs_python="py")
+    open4dgs.train(tmp_path, tmp_path / "run", image_size=1536, recipe="dense", head_boost=3,
+                   trainer_args=["--config.ckpt-every", "10000"], trigs_python="py")
+    classic, dense = calls
+    value = lambda cmd, flag: cmd[cmd.index(flag) + 1]
+    assert value(classic, "--config.keyframe-stride") == "9" and "--config.no-relocate" not in classic
+    assert value(dense, "--config.keyframe-stride") == "1"
+    assert (value(dense, "--camera.width"), value(dense, "--camera.height")) == ("1056", "1536")
+    assert value(dense, "--config.init-sigma-t") == "0.125"
+    assert value(dense, "--config.target-random-head-boost") == "3"
+    assert value(dense, "--config.ckpt-every") == "10000"
+    for flag in ("--config.target-random", "--config.no-relocate", "--config.lambda-reg", "--config.sigma-t-max"):
+        assert flag in dense
+    with pytest.raises(ValueError):
+        open4dgs.train(tmp_path, tmp_path / "run", recipe="fast", trigs_python="py")
 
 
 def test_cameras():

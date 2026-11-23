@@ -3,12 +3,13 @@ import * as pc from "playcanvas";
 import { AsogPlayer } from "../../js/src/playcanvas/index.js";
 
 const params = new URLSearchParams(location.search);
-const src = params.get("src") ?? "../../test-data/rubloff-6s.asog";
+const src = params.get("src") ?? "../../test-data/rubloff-6s-4k.asog";
 const useWebgpu = params.has("webgpu") ? params.get("webgpu") !== "0" : !!navigator.gpu;
 const soundVolume = params.has("volume") ? Number(params.get("volume")) : 1;
 
 const $ = (id) => document.getElementById(id);
 const info = $("info"), playButton = $("play"), scrub = $("scrub"), clockLabel = $("clock"), soundButton = $("sound");
+const loader = $("loader"), loaderPct = $("loader-pct"), loaderFill = $("loader-fill");
 
 // ---------------------------------------------------------------- app
 const canvas = $("canvas");
@@ -129,12 +130,16 @@ app.on("update", (dt) => {
 
 // ---------------------------------------------------------------- load
 showInfo();
-info.textContent = `Loading ${src} (${viewer.device})…`;
+$("loader-name").textContent = `${decodeURIComponent(src.split("/").pop())} · ${viewer.device}`;
+loader.hidden = false; // hidden in the page, so a cached older script or an early failure leaves no stuck loader
 try {
     const player = await AsogPlayer.load(app, src, app.root, {
         getTime: () => clock.now(),
         volume: 0, // muted until "Enable sound"
-        onProgress: (p) => (info.textContent = `Loading ${src}: ${Math.round(p * 100)} %`),
+        onProgress: (p) => {
+            loaderPct.textContent = `${Math.round(p * 100)} %`;
+            loaderFill.style.width = `${p * 100}%`;
+        },
     });
     viewer.player = player;
     scrub.max = String(player.duration);
@@ -154,8 +159,10 @@ try {
         });
     }
     if (player.audioError) console.error("soundtrack:", player.audioError);
+    loader.hidden = true;
     showInfo();
 } catch (e) {
+    loader.hidden = true;
     info.innerHTML = "";
     const err = document.createElement("span");
     err.id = "error";

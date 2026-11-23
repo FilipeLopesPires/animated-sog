@@ -82,7 +82,33 @@ a few engine internals (PlayCanvas 2.22); see the package READMEs for limits.
 - Open4DGS (ASU Narrative and Emerging Media Lab): the trainer and timeline exporter the flip-book
   pipeline runs as external tools (AGPL-3.0, not part of this repository).
 - SOG and the gsplat renderer of the PlayCanvas engine.
-- The Rubloff capture in `test-data/` and the movie above: [Infinite Realities](https://www.ir-ltd.net/).
+- The Rubloff capture in `test-data/` and the movie above: [IR-MichaelRF](https://github.com/Infinite-Realities-Research/IR-MichaelRF),
+  Michael Rubloff ([radiancefields.com](https://radiancefields.com/)) captured by [Infinite Realities](https://www.ir-ltd.net/),
+  part of the [Infinite-Realities Datasets](https://github.com/Infinite-Realities-Research/IR-Datasets) (citations below).
+
+### Dataset citations
+
+The Rubloff clips come from the Infinite-Realities Datasets, cited as the dataset authors ask:
+
+```bibtex
+@misc{ir2025datasets,
+    author = {Infinite-Realities and Triplegangers and Perry-Smith, Lee and Pearce, Henry and Tomchuk, Oleksandr and Tomchuk, Kateryna},
+    title = {Infinite-Realities Datasets},
+    year = {2025},
+    publisher = {Infinite-Realities},
+    note = {GitHub repository},
+    howpublished = {\url{https://github.com/Infinite-Realities-Research/IR-Datasets}}
+}
+
+@misc{ir2025michaelrf,
+    author = {Infinite-Realities and Perry-Smith, Lee and Pearce, Henry and Rubloff, Michael},
+    title = {IR-MichaelRF},
+    year = {2025},
+    publisher = {Infinite-Realities},
+    note = {Part of the Infinite-Realities Datasets repository},
+    howpublished = {\url{https://github.com/Infinite-Realities-Research/IR-MichaelRF}}
+}
+```
 
 ## Licence
 

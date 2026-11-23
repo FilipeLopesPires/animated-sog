@@ -39,12 +39,19 @@
         #bar button:hover { background: rgba(255, 255, 255, 0.22); }
         #scrub { flex: 1; min-width: 0; accent-color: #9cf; }
         #clock { font-variant-numeric: tabular-nums; min-width: 92px; text-align: right; }
+        #loader { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+                  gap: 12px; pointer-events: none; }
+        #loader-pct { font-size: 44px; font-weight: 300; font-variant-numeric: tabular-nums; color: #fff; }
+        #loader-track { width: min(320px, 70vw); height: 4px; border-radius: 2px; background: rgba(255, 255, 255, 0.15); overflow: hidden; }
+        #loader-fill { display: block; width: 0; height: 100%; background: #9cf; transition: width 0.15s linear; }
+        #loader-name { color: #999; max-width: 80vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         [hidden] { display: none !important; }
     </style>
 </head>
 <body>
     <canvas id="canvas"></canvas>
-    <div id="info">Loading…</div>
+    <div id="info"></div>
+    <div id="loader" hidden><div id="loader-pct">0 %</div><div id="loader-track"><i id="loader-fill"></i></div><div id="loader-name"></div></div>
     <div id="bar">
         <button id="play" type="button">Pause</button>
         <input id="scrub" type="range" min="0" max="1" step="0.001" value="0" aria-label="Time">

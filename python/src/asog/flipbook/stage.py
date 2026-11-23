@@ -16,7 +16,7 @@ import shutil
 from pathlib import Path
 
 from .cameras import euler_matrix
-from .ply import rotate_ply
+from .ply import in_trainer_layout, read_vertices, rotate_ply, write_trainer_layout
 
 log = logging.getLogger(__name__)
 
@@ -28,7 +28,9 @@ def stage(source: str | Path, out_dir: str | Path, *, start: int = 0, count: int
     capture trained at 30 fps).
 
     `rotation` ("rx,ry,rz" degrees, extrinsic XYZ; "-90,0,0" for z-up sources) rotates every frame,
-    including its SH; without it the frames are hard-linked (copied across drives). Returns the paths."""
+    including its SH. Frames are written in the original 3DGS layout the trainer reads (normals, then SH,
+    opacity, scales, rotation); without a rotation a frame already in it is hard-linked (copied across
+    drives). Returns the paths."""
     frames = sorted(Path(source).glob("*.ply"))
     picked = frames[start::stride]
     if count is not None:
@@ -49,11 +51,13 @@ def stage(source: str | Path, out_dir: str | Path, *, start: int = 0, count: int
             rotate_ply(p, dst, R)
             if i % 30 == 0:
                 log.info(f"  rotated {i + 1}/{len(picked)}")
-        else:
+        elif in_trainer_layout(p):
             try:
                 os.link(p, dst)
             except OSError:
                 shutil.copy2(p, dst)
+        else:
+            write_trainer_layout(dst, read_vertices(p)[1])
         staged.append(dst)
     log.info(f"staged {len(staged)} frames {picked[0].name} .. {picked[-1].name} into {out}"
              + (f", rotated {rotation}" if rotation else ""))

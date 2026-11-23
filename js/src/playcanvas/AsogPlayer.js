@@ -171,7 +171,7 @@ export class AsogPlayer {
         const clipTex = this._makeTexture("asogClips", 2, manifest.clips.length, pc.PIXELFORMAT_RGBA32F, true);
         await this._upload(clipTex, data.clips);
 
-        this.entity = new pc.Entity("AsogClip");
+        this.entity = new pc.Entity("AsogClip", this.app); // the app, not the last one created: pages may run several
         this.entity.setLocalEulerAngles(0, 0, 180);
         parent.addChild(this.entity);
         this.entity.addComponent("gsplat", {

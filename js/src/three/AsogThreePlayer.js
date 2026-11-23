@@ -7,7 +7,8 @@
  * and colours every splat into two RGBA32UI targets when the time or the camera position changed,
  * then one instanced quad a splat is projected and blended back to front (premultiplied alpha).
  * The order comes from a worker (core sortWorkerSource) that re-evaluates the centres for the
- * current time and depth sorts the visible splats.
+ * current time and depth sorts every splat of the active clips; the ones not visible at the time drawn are
+ * dropped in the vertex shader (zero opacity from the work pass).
  *
  * The clip is shown y up: the player's object is rotated 180° about z (TRiGS files are y down).
  */
@@ -71,7 +72,7 @@ export class AsogThreePlayer {
         this.numSplats = 0;
         /** current clip time (seconds) */
         this.time = 0;
-        /** splats drawn: those visible at the time of the last sort */
+        /** splats drawn: those of the clips active at the time of the last sort */
         this.numVisible = 0;
         /** @type {{ fileBytes: number, decodeMs: number, halfOverflow: number, loadMs: number } | null} */
         this.stats = null;
@@ -405,7 +406,10 @@ export class AsogThreePlayer {
             this._sortRow = row;
             const indices = this._sortSpare;
             this._sortSpare = null;
-            this._worker.postMessage({ sort: true, time: this.time, depthRow: row, indices }, [indices]);
+            // every splat of the active clips, not only those visible now: an order is drawn until the next one
+            // arrives (tens to hundreds of ms, more while scrubbing), and the work pass gives a splat that is not
+            // visible at the current time zero opacity, so the vertex shader drops it
+            this._worker.postMessage({ sort: true, time: this.time, depthRow: row, indices, margin: Infinity }, [indices]);
         }
 
         if (this._sound) {

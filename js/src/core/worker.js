@@ -7,7 +7,8 @@
  *   → { init: true, n, centers, A, B, clips }   ArrayBuffers: canonical centres (f32 xyz), motionA, motionB, clip table
  *   → { time, out }                              out: an ArrayBuffer of n * 3 floats to fill
  *   ← { time, out }                              out filled with the centres at `time`
- *   → { sort: true, time, depthRow, indices }    indices: an ArrayBuffer of n uint32 to fill; depthRow: 4 numbers
+ *   → { sort: true, time, depthRow, indices, margin }  indices: an ArrayBuffer of n uint32 to fill; depthRow: 4 numbers;
+ *                                                margin: seconds (sortSplats)
  *                                                (sortSplats); the centres are re-evaluated only when `time` changed
  *   ← { sort: true, time, count, indices }       indices: the splats visible at `time`, back to front (sortSplats)
  */
@@ -41,7 +42,7 @@ function sortWorkerMain() {
                 s.movedTime = msg.time;
             }
             const indices = new Uint32Array(msg.indices);
-            const count = sortSplats(s.n, s.moved, s.A, s.clips, msg.time, msg.depthRow, indices, s.scratch);
+            const count = sortSplats(s.n, s.moved, s.A, s.clips, msg.time, msg.depthRow, indices, s.scratch, msg.margin ?? 0);
             self.postMessage({ sort: true, time: msg.time, count, indices: indices.buffer }, [indices.buffer]);
             return;
         }
